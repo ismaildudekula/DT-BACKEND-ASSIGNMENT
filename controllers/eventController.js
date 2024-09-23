@@ -1,53 +1,8 @@
 const { ObjectId } = require('mongodb');
 const connectDB = require('../config/db');
 
-// Fetch event by ID
-exports.getEvents = async (req, res) => {
-    const db = await connectDB();
-    const { limit = 10, page = 1, id, type } = req.query;
-  
-    if (page < 1 || limit < 1) {
-      return res.status(400).json({ message: 'Page and limit must be positive integers.' });
-    }
-  
-    try {
-      if (id) {
-        // Get event by ID
-        const event = await db.collection('events').findOne({ _id: new ObjectId(id) });
-        if (!event) return res.status(404).json({ message: 'Event not found' });
-        return res.json(event);
-      }
-  
-      if (type === 'latest') {
-        // Get latest events
-        const totalEvents = await db.collection('events').countDocuments();
-        const events = await db.collection('events')
-          .find({})
-          .sort({ schedule: -1 })  // Sorting by schedule in descending order
-          .skip((page - 1) * limit)
-          .limit(parseInt(limit))
-          .toArray();
-  
-        if (events.length === 0) {
-          return res.status(404).json({ message: 'No events found' });
-        }
-  
-        res.json({
-          totalEvents,
-          totalPages: Math.ceil(totalEvents / limit),
-          currentPage: page,
-          events,
-        });
-      } else {
-        return res.status(400).json({ message: 'Invalid request type. Use "latest" or provide an event ID.' });
-      }
-    } catch (error) {
-      res.status(500).json({ message: 'Error fetching events', error });
-    }
-  };
-  
-
-// Fetch events by recency with pagination
+// Fetch event by ID (if id provided)
+// Fetch events by recency with pagination(if type provided)
 exports.getLatestEvents = async (req, res) => {
     const db = await connectDB();
     const { limit = 10, page = 1, id, type } = req.query;
